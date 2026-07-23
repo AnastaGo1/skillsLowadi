@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐴</text></svg>">
+    <title>Подбор специализации лошади (v3)</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            min-height: 100vh;
+            padding: 30px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        .container {
+            background: #ffffff;
+            max-width: 950px;
+            width: 100%;
+            padding: 35px 40px;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+        h1 {
+            font-size: 28px;
+            color: #1a1a2e;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        h1 span { font-size: 32px; }
+        .subtitle {
+            color: #666;
+            font-size: 15px;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #e8e8e8;
+            padding-bottom: 15px;
+        }
+        .subtitle .highlight { background: #fef3c7; padding: 2px 10px; border-radius: 6px; }
+        label {
+            font-weight: 600;
+            font-size: 15px;
+            color: #333;
+            display: block;
+            margin-bottom: 6px;
+        }
+        textarea {
+            width: 100%;
+            height: 200px;
+            padding: 14px 16px;
+            font-size: 14px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            border: 2px solid #d0d7de;
+            border-radius: 12px;
+            resize: vertical;
+            transition: 0.2s;
+            background: #f8f9fa;
+            line-height: 1.7;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #4a6cf7;
+            background: #ffffff;
+            box-shadow: 0 0 0 4px rgba(74,108,247,0.15);
+        }
+        .row {
+            display: flex;
+            gap: 20px;
+            margin-top: 18px;
+            flex-wrap: wrap;
+        }
+        .row > div { flex: 1; min-width: 150px; }
+        select, input[type="number"] {
+            width: 100%;
+            padding: 12px 14px;
+            font-size: 15px;
+            border: 2px solid #d0d7de;
+            border-radius: 12px;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: 500;
+        }
+        select:focus, input:focus {
+            outline: none;
+            border-color: #4a6cf7;
+            box-shadow: 0 0 0 4px rgba(74,108,247,0.15);
+        }
+        .btn {
+            width: 100%;
+            padding: 14px;
+            font-size: 18px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #4a6cf7, #6a3de8);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: 0.25s;
+            margin-top: 20px;
+            letter-spacing: 0.5px;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(74,108,247,0.4);
+        }
+        .btn:active { transform: translateY(0); }
+        .result {
+            margin-top: 25px;
+            padding: 20px 25px;
+            border-radius: 14px;
+            display: none;
+            font-size: 15px;
+            line-height: 1.6;
+            border: 2px solid #e8e8e8;
+        }
+        .result.show { display: block; animation: fadeIn 0.4s ease; }
+        .result.success { background: #f0fdf4; border-color: #86efac; }
+        .result.error { background: #fef2f2; border-color: #fca5a5; }
+        .result.warning { background: #fffbeb; border-color: #fcd34d; }
+        .result .main { font-size: 24px; font-weight: 700; color: #1a1a2e; }
+        .result .main span {
+            background: #4a6cf7;
+            color: white;
+            padding: 2px 16px;
+            border-radius: 40px;
+            font-size: 20px;
+            display: inline-block;
+        }
+        .result .main .match-2 { background: #f59e0b; }
+        .result .main .match-3 { background: #10b981; }
+        .result .detail { margin-top: 10px; color: #555; font-size: 14px; }
+        .result .badge {
+            display: inline-block;
+            padding: 2px 14px;
+            border-radius: 40px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-right: 6px;
+        }
+        .badge.classic { background: #dbeafe; color: #1e40af; }
+        .badge.western { background: #fef3c7; color: #92400e; }
+        .badge.none { background: #e5e7eb; color: #374151; }
+        .top-skills {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin: 8px 0 5px 0;
+        }
+        .skill-pill {
+            background: #eef2ff;
+            padding: 3px 16px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 15px;
+            color: #4a6cf7;
+        }
+        .skill-pill.gold { background: #fef3c7; color: #b45309; }
+        .match-list { margin-top: 12px; border-top: 1px solid #e8e8e8; padding-top: 12px; }
+        .match-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: #f8fafc;
+            border-radius: 10px;
+            margin-bottom: 6px;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .match-item .name { font-weight: 600; font-size: 16px; }
+        .match-item .score {
+            font-size: 13px;
+            padding: 2px 12px;
+            border-radius: 40px;
+            font-weight: 600;
+        }
+        .score.good { background: #dbeafe; color: #1e40af; }
+        .score.best { background: #86efac; color: #065f46; }
+        .score.miss { background: #fef3c7; color: #92400e; }
+        .match-item .skills { font-size: 13px; color: #666; }
+        .match-item .skills .hit { color: #10b981; font-weight: 600; }
+        .match-item .skills .miss { color: #ef4444; }
+        .all-skills-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 6px;
+            margin-top: 8px;
+            font-size: 13px;
+        }
+        .all-skills-grid .item {
+            background: #f1f5f9;
+            padding: 4px 12px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .all-skills-grid .item .val { font-weight: 600; color: #1a1a2e; }
+        .all-skills-grid .item .top { background: #fef3c7; border-radius: 4px; padding: 0 6px; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .example {
+            margin-top: 14px;
+            font-size: 13px;
+            color: #888;
+            background: #f8f9fa;
+            padding: 12px 16px;
+            border-radius: 10px;
+            border: 1px dashed #d0d7de;
+        }
+        .example code {
+            font-family: 'Consolas', monospace;
+            background: #e8e8e8;
+            padding: 1px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .footer {
+            margin-top: 22px;
+            text-align: center;
+            font-size: 13px;
+            color: #aaa;
+            border-top: 1px solid #eee;
+            padding-top: 18px;
+        }
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .tab-btn {
+            padding: 6px 16px;
+            border: 2px solid #d0d7de;
+            border-radius: 40px;
+            background: #f8f9fa;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            transition: 0.2s;
+        }
+        .tab-btn.active {
+            background: #4a6cf7;
+            color: white;
+            border-color: #4a6cf7;
+        }
+        .tab-btn:hover:not(.active) { background: #e8e8e8; }
+        @media (max-width: 600px) {
+            .container { padding: 20px; }
+            h1 { font-size: 22px; }
+            .row { flex-direction: column; }
+            .match-item { flex-direction: column; align-items: flex-start; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1><span>🐴</span> Подбор специализации <span style="font-size:16px; color:#888; font-weight:400;"></span></h1>
+    <div class="subtitle">
+        Вставьте данные <span class="highlight">Генетический потенциал</span> и/или <span class="highlight">Навыки</span> — 
+        система возьмёт <strong>максимальное</strong> значение для каждого навыка
+    </div>
+
+    <label for="rawData">📋 Вставьте сюда скопированный текст (можно оба блока сразу):</label>
+    <textarea id="rawData">Генетический потенциал		Итог: 35472.26
+Выносливость	1301.87	 	Галоп	5700.19
+Скорость	7222.82	 	Рысь	3938.53
+Выездка	9035.23	 	Прыжки	8273.61
+
+Навыки
+Итог: 35472.26
+Выносливость	
+31.7528
+1301.87
+Скорость	
+176.1665
+7222.82
+Выездка	
+220.3715
+9035.23
+Галоп	
+139.029
+5700.19
+Рысь	
+96.0618
+3938.53
+Прыжки	
+201.7953
+8273.61</textarea>
+
+    <div class="row">
+        <div>
+            <label for="restriction">🚫 Ограничение:</label>
+            <select id="restriction">
+                <option value="none">Нет специализации</option>
+                <option value="classic">Уже выбрана Классика</option>
+                <option value="western">Уже выбран Вестерн</option>
+            </select>
+        </div>
+        <div>
+            <label for="minMatch">🎯 Минимальное совпадение:</label>
+            <select id="minMatch">
+                <option value="2">2 из 3 навыков</option>
+                <option value="3">3 из 3 (строгий режим)</option>
+            </select>
+        </div>
+        <div style="display: flex; align-items: flex-end;">
+            <button class="btn" onclick="analyze()">🔍 Найти дисциплины</button>
+        </div>
+    </div>
+
+    <div class="example">
+        💡 <strong>Как копировать:</strong> выделите <strong>весь текст</strong> из игры (и "Генетический потенциал", и "Навыки") и вставьте в поле. 
+        Система сама найдёт все цифры и возьмёт максимальные.
+    </div>
+
+    <div id="result" class="result"></div>
+    <div class="footer">Автоматический подбор по ТОП-3 навыкам</div>
+</div>
+
+<script>
+    // ==================== БАЗА ДАННЫХ ====================
+    const DISCIPLINES = {
+        'Скачки галопом': { type: 'classic', main: 'Галоп', skills: ['Галоп', 'Скорость', 'Выносливость'] },
+        'Бег рысью':      { type: 'classic', main: 'Рысь', skills: ['Рысь', 'Скорость', 'Выездка'] },
+        'Кросс':          { type: 'classic', main: 'Выносливость', skills: ['Выносливость', 'Галоп', 'Прыжки'] },
+        'Конкур':         { type: 'classic', main: 'Прыжки', skills: ['Прыжки', 'Скорость', 'Выносливость'] },
+        'Выездка':        { type: 'classic', main: 'Выездка', skills: ['Выездка', 'Галоп', 'Рысь'] },
+        'Бочка':          { type: 'western', main: 'Скорость', skills: ['Скорость', 'Выносливость', 'Галоп'] },
+        'Каттинг':        { type: 'western', main: 'Выносливость', skills: ['Выносливость', 'Выездка', 'Скорость'] },
+        'Рейнинг':        { type: 'western', main: 'Галоп', skills: ['Галоп', 'Выездка', 'Выносливость'] },
+        'Вестерн-плежер': { type: 'western', main: 'Выездка', skills: ['Выездка', 'Рысь', 'Выносливость'] },
+        'Трейл':          { type: 'western', main: 'Рысь', skills: ['Рысь', 'Прыжки', 'Выездка'] }
+    };
+
+    const SKILL_NAMES = ['Выносливость', 'Галоп', 'Скорость', 'Рысь', 'Выездка', 'Прыжки'];
+
+    // ==================== РАСШИРЕННЫЙ ПАРСИНГ ====================
+    function parseAllSkills(text) {
+        const result = {};
+        SKILL_NAMES.forEach(name => result[name] = 0);
+
+        // Ищем ВСЕ числа, которые идут после названия навыка
+        for (const skill of SKILL_NAMES) {
+            // Ищем все вхождения: "Навык" и потом числа (разные форматы)
+            const regex = new RegExp(skill + '[\\s\\t]+([\\d.]+)', 'gi');
+            let match;
+            const found = [];
+            while ((match = regex.exec(text)) !== null) {
+                const val = parseFloat(match[1].replace(/,/g, '.'));
+                if (!isNaN(val)) found.push(val);
+            }
+
+            // Если нашли несколько чисел — берём максимальное
+            if (found.length > 0) {
+                result[skill] = Math.max(...found);
+            } else {
+                // Пробуем другой паттерн: навык с переносом строки
+                const multiRegex = new RegExp(skill + '[\\s\\t]*\\n?\\s*([\\d.]+)', 'gi');
+                while ((match = multiRegex.exec(text)) !== null) {
+                    const val = parseFloat(match[1].replace(/,/g, '.'));
+                    if (!isNaN(val) && val > result[skill]) {
+                        result[skill] = val;
+                    }
+                }
+            }
+
+            // Если всё ещё 0 — пробуем найти "Навык" с точкой в конце
+            const dotRegex = new RegExp(skill + '[\\s\\t]*[\\d.]+', 'gi');
+            while ((match = dotRegex.exec(text)) !== null) {
+                const parts = match[0].split(/[\s\t]+/);
+                for (const p of parts) {
+                    const val = parseFloat(p.replace(/,/g, '.'));
+                    if (!isNaN(val) && val > result[skill]) {
+                        result[skill] = val;
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
+    function getTop3(skills) {
+        const sorted = SKILL_NAMES.map(name => ({ name, value: skills[name] || 0 }))
+                                  .filter(s => s.value > 0)
+                                  .sort((a, b) => b.value - a.value);
+        if (sorted.length < 3) return sorted.map(s => s.name);
+        return sorted.slice(0, 3).map(s => s.name);
+    }
+
+    // ==================== АНАЛИЗ ====================
+    function analyze() {
+        const raw = document.getElementById('rawData').value.trim();
+        const restriction = document.getElementById('restriction').value;
+        const minMatch = parseInt(document.getElementById('minMatch').value);
+        const resultDiv = document.getElementById('result');
+
+        if (!raw) {
+            resultDiv.className = 'result show error';
+            resultDiv.innerHTML = '⚠️ Вставьте данные лошади в поле выше.';
+            return;
+        }
+
+        const skills = parseAllSkills(raw);
+        const hasAny = SKILL_NAMES.some(name => skills[name] > 0);
+        if (!hasAny) {
+            resultDiv.className = 'result show error';
+            resultDiv.innerHTML = '❌ Не удалось найти цифры навыков. Проверьте, что в тексте есть названия (Выносливость, Галоп, ...) и цифры рядом.';
+            return;
+        }
+
+        const top3 = getTop3(skills);
+        if (top3.length < 3) {
+            resultDiv.className = 'result show warning';
+            resultDiv.innerHTML = `⚠️ Найдено только ${top3.length} навыка с цифрами. Нужно минимум 3.`;
+            return;
+        }
+
+        // Все навыки для отображения
+        const allSkillsHtml = SKILL_NAMES.map(name => {
+            const val = skills[name];
+            const isTop = top3.includes(name);
+            const pos = top3.indexOf(name);
+            const medal = pos === 0 ? '🥇' : pos === 1 ? '🥈' : pos === 2 ? '🥉' : '';
+            return `<div class="item"><span>${name}</span><span class="val ${isTop?'top':''}">${medal} ${val.toFixed(2)}</span></div>`;
+        }).join('');
+
+        // ТОП-3 для вывода
+        const top3Full = top3.map((name, i) => {
+            const val = skills[name];
+            const prefix = i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉';
+            return `${prefix} ${name} (${val.toFixed(2)})`;
+        }).join('<br>');
+
+        // Фильтруем дисциплины по ограничению
+        let filtered = Object.entries(DISCIPLINES);
+        if (restriction === 'classic') {
+            filtered = filtered.filter(([name, data]) => data.type === 'classic');
+        } else if (restriction === 'western') {
+            filtered = filtered.filter(([name, data]) => data.type === 'western');
+        }
+
+        // Оцениваем каждую дисциплину
+        const matches = [];
+        for (const [discName, discData] of filtered) {
+            const required = discData.skills;
+            let hitCount = 0;
+            let hitDetails = [];
+            let missDetails = [];
+            let score = 0;
+
+            for (const skill of required) {
+                const pos = top3.indexOf(skill);
+                if (pos !== -1) {
+                    hitCount++;
+                    const points = pos === 0 ? 3 : pos === 1 ? 2 : 1;
+                    score += points;
+                    hitDetails.push(`${skill} (№${pos+1})`);
+                } else {
+                    missDetails.push(skill);
+                }
+            }
+
+            if (top3[0] === discData.main) score += 2;
+
+            matches.push({
+                name: discName,
+                type: discData.type,
+                main: discData.main,
+                required: required,
+                hitCount: hitCount,
+                total: required.length,
+                hitDetails: hitDetails,
+                missDetails: missDetails,
+                score: score,
+                matchPercent: Math.round((hitCount / required.length) * 100)
+            });
+        }
+
+        matches.sort((a, b) => {
+            if (b.hitCount !== a.hitCount) return b.hitCount - a.hitCount;
+            return b.score - a.score;
+        });
+
+        const filteredMatches = matches.filter(m => m.hitCount >= minMatch);
+
+        // ======== ВЫВОД ========
+        const badgeType = restriction === 'classic' ? 'classic' : restriction === 'western' ? 'western' : 'none';
+        const badgeLabel = restriction === 'classic' ? 'КЛАССИКА' : restriction === 'western' ? 'ВЕСТЕРН' : 'БЕЗ ОГРАНИЧЕНИЙ';
+
+        let html = `<div style="margin-bottom:12px;">
+            <span class="badge ${badgeType}">${badgeLabel}</span>
+            <span style="font-size:13px; color:#888; margin-left:10px;">Минимум ${minMatch} из 3 совпадений</span>
+        </div>`;
+
+        html += `<div style="margin-bottom:12px; background:#f8fafc; padding:12px 16px; border-radius:10px;">
+            <strong>🏆 ТОП-3 навыка (максимальные значения):</strong>
+            <div class="top-skills">${top3.map((name, i) => 
+                `<span class="skill-pill ${i===0?'gold':''}">${i===0?'⭐ ':''}${name}</span>`
+            ).join('')}</div>
+            <div style="font-size:13px; color:#555; margin-top:4px;">${top3Full}</div>
+            <div style="margin-top:8px; border-top:1px solid #e2e8f0; padding-top:8px;">
+                <strong>📊 Все навыки (макс. из потенциала и текущих):</strong>
+                <div class="all-skills-grid">${allSkillsHtml}</div>
+            </div>
+        </div>`;
+
+        if (filteredMatches.length === 0) {
+            if (matches.length === 0) {
+                html += `<div class="main" style="color:#dc2626;">❌ Нет доступных дисциплин с текущим ограничением</div>`;
+            } else {
+                html += `<div class="main" style="color:#f59e0b;">⚠️ Нет дисциплин с ${minMatch} совпадениями</div>`;
+                html += `<div class="detail">Попробуйте уменьшить минимальное совпадение до 2 из 3.</div>`;
+                const best = matches.slice(0, 3);
+                if (best.length > 0) {
+                    html += `<div class="match-list"><strong>Ближайшие варианты (${best[0].hitCount} из 3):</strong>`;
+                    for (const m of best) {
+                        html += `<div class="match-item">
+                            <span class="name">${m.name}</span>
+                            <span class="score ${m.hitCount === 3 ? 'best' : m.hitCount === 2 ? 'good' : 'miss'}">
+                                ${m.hitCount}/${m.total} совпадений
+                            </span>
+                            <span class="skills">
+                                ${m.hitDetails.map(s => `<span class="hit">✅ ${s}</span>`).join(' ')}
+                                ${m.missDetails.map(s => `<span class="miss">❌ ${s}</span>`).join(' ')}
+                            </span>
+                        </div>`;
+                    }
+                    html += `</div>`;
+                }
+            }
+            resultDiv.className = 'result show warning';
+            resultDiv.innerHTML = html;
+            return;
+        }
+
+        html += `<div class="main">✅ Найдено <span class="${filteredMatches[0].hitCount === 3 ? 'match-3' : 'match-2'}">${filteredMatches.length}</span> подходящих дисциплин</div>`;
+        html += `<div class="match-list">`;
+
+        for (const m of filteredMatches) {
+            const isPerfect = m.hitCount === 3;
+            const scoreLabel = isPerfect ? '⭐ ИДЕАЛЬНО' : `${m.hitCount}/${m.total} совпадений`;
+            html += `<div class="match-item">
+                <span class="name">${m.name} ${isPerfect ? '✅' : ''}</span>
+                <span class="score ${isPerfect ? 'best' : 'good'}">${scoreLabel}</span>
+                <span class="skills">
+                    ${m.hitDetails.map(s => `<span class="hit">✅ ${s}</span>`).join(' ')}
+                    ${m.missDetails.map(s => `<span class="miss">❌ ${s}</span>`).join(' ')}
+                </span>
+                <span style="font-size:12px; color:#888;">рейтинг: ${m.score}</span>
+            </div>`;
+        }
+        html += `</div>`;
+
+        const perfect = filteredMatches.find(m => m.hitCount === 3);
+        if (perfect) {
+            html += `<div style="margin-top:12px; padding:12px 16px; background:#d1fae5; border-radius:10px; border:2px solid #10b981;">
+                🎯 <strong>Рекомендация:</strong> выберите <strong>${perfect.name}</strong> — идеальное совпадение всех трёх навыков!
+            </div>`;
+        } else if (filteredMatches.length > 0) {
+            const best = filteredMatches[0];
+            html += `<div style="margin-top:12px; padding:12px 16px; background:#fef3c7; border-radius:10px; border:2px solid #f59e0b;">
+                💡 <strong>Лучший вариант:</strong> <strong>${best.name}</strong> (${best.hitCount} из 3 навыков совпадают)
+            </div>`;
+        }
+
+        resultDiv.className = 'result show success';
+        resultDiv.innerHTML = html;
+    }
+
+    document.getElementById('rawData').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            analyze();
+        }
+    });
+
+    window.onload = function() {
+        analyze();
+    };
+</script>
+
+</body>
+</html>
