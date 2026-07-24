@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐴</text></svg>">
-    <title>Подбор специализации лошади (v3)</title>
+    <title>Подбор специализации и прогулок</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -51,7 +51,7 @@
         }
         textarea {
             width: 100%;
-            height: 200px;
+            height: 180px;
             padding: 14px 16px;
             font-size: 14px;
             font-family: 'Consolas', 'Courier New', monospace;
@@ -68,6 +68,13 @@
             background: #ffffff;
             box-shadow: 0 0 0 4px rgba(74,108,247,0.15);
         }
+        textarea::placeholder {
+            color: #aaa;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.7;
+            white-space: pre-wrap;
+        }
         .row {
             display: flex;
             gap: 20px;
@@ -75,7 +82,7 @@
             flex-wrap: wrap;
         }
         .row > div { flex: 1; min-width: 150px; }
-        select, input[type="number"] {
+        select {
             width: 100%;
             padding: 12px 14px;
             font-size: 15px;
@@ -86,7 +93,7 @@
             transition: 0.2s;
             font-weight: 500;
         }
-        select:focus, input:focus {
+        select:focus {
             outline: none;
             border-color: #4a6cf7;
             box-shadow: 0 0 0 4px rgba(74,108,247,0.15);
@@ -134,7 +141,6 @@
         }
         .result .main .match-2 { background: #f59e0b; }
         .result .main .match-3 { background: #10b981; }
-        .result .detail { margin-top: 10px; color: #555; font-size: 14px; }
         .result .badge {
             display: inline-block;
             padding: 2px 14px;
@@ -146,6 +152,7 @@
         .badge.classic { background: #dbeafe; color: #1e40af; }
         .badge.western { background: #fef3c7; color: #92400e; }
         .badge.none { background: #e5e7eb; color: #374151; }
+        .badge.walk { background: #d1fae5; color: #065f46; }
         .top-skills {
             display: flex;
             gap: 12px;
@@ -202,6 +209,44 @@
         }
         .all-skills-grid .item .val { font-weight: 600; color: #1a1a2e; }
         .all-skills-grid .item .top { background: #fef3c7; border-radius: 4px; padding: 0 6px; }
+        .walks-section {
+            margin-top: 16px;
+            border-top: 2px solid #e8e8e8;
+            padding-top: 16px;
+        }
+        .walks-section .walk-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-bottom: 10px;
+        }
+        .walk-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            background: #f0fdf4;
+            border-radius: 10px;
+            margin-bottom: 6px;
+            border-left: 4px solid #10b981;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .walk-item .name { font-weight: 600; font-size: 16px; }
+        .walk-item .skills {
+            font-size: 13px;
+            color: #555;
+        }
+        .walk-item .skills .hit { color: #10b981; font-weight: 600; }
+        .walk-item .skills .miss { color: #ef4444; }
+        .walk-item .score {
+            font-size: 13px;
+            padding: 2px 12px;
+            border-radius: 40px;
+            font-weight: 600;
+            background: #d1fae5;
+            color: #065f46;
+        }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -230,46 +275,28 @@
             border-top: 1px solid #eee;
             padding-top: 18px;
         }
-        .tab-buttons {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        .tab-btn {
-            padding: 6px 16px;
-            border: 2px solid #d0d7de;
-            border-radius: 40px;
-            background: #f8f9fa;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 13px;
-            transition: 0.2s;
-        }
-        .tab-btn.active {
-            background: #4a6cf7;
-            color: white;
-            border-color: #4a6cf7;
-        }
-        .tab-btn:hover:not(.active) { background: #e8e8e8; }
         @media (max-width: 600px) {
             .container { padding: 20px; }
             h1 { font-size: 22px; }
             .row { flex-direction: column; }
             .match-item { flex-direction: column; align-items: flex-start; }
+            .walk-item { flex-direction: column; align-items: flex-start; }
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1><span>🐴</span> Подбор специализации <span style="font-size:16px; color:#888; font-weight:400;"></span></h1>
+    <h1><span>🐴</span> Подбор специализации</h1>
     <div class="subtitle">
         Вставьте данные <span class="highlight">Генетический потенциал</span> и/или <span class="highlight">Навыки</span> — 
-        система возьмёт <strong>максимальное</strong> значение для каждого навыка
+        система подберёт <strong>лучшую дисциплину</strong> и <strong>прогулку</strong> для вашей лошади
     </div>
 
-    <label for="rawData">📋 Вставьте сюда скопированный текст (можно оба блока сразу):</label>
-    <textarea id="rawData" placeholder="Генетический потенциал		Итог: 35472.26
+    <label for="rawData">📋 Вставьте сюда скопированный текст:</label>
+    <textarea id="rawData" placeholder="Пример данных (скопируйте из игры и вставьте сюда):
+
+Генетический потенциал		Итог: 35472.26
 Выносливость	1301.87	 	Галоп	5700.19
 Скорость	7222.82	 	Рысь	3938.53
 Выездка	9035.23	 	Прыжки	8273.61
@@ -312,13 +339,14 @@
             </select>
         </div>
         <div style="display: flex; align-items: flex-end;">
-            <button class="btn" onclick="analyze()">🔍 Найти дисциплины</button>
+            <button class="btn" onclick="analyze()">🔍 Найти дисциплины и прогулки</button>
         </div>
     </div>
 
     <div class="example">
-        💡 <strong>Как копировать:</strong> выделите <strong>весь текст</strong> из игры (и "Генетический потенциал", и "Навыки") и вставьте в поле. 
-        Система сама найдёт все цифры и возьмёт максимальные.
+        🌲 <strong>Прогулки:</strong> система также подберёт прогулку, которая качает ваши сильные навыки.<br>
+        • <strong>Прогулка в лесу</strong> — Выездка, Галоп, Прыжки<br>
+        • <strong>Прогулка в горах</strong> — Скорость, Выносливость, Рысь
     </div>
 
     <div id="result" class="result"></div>
@@ -340,16 +368,20 @@
         'Трейл':          { type: 'western', main: 'Рысь', skills: ['Рысь', 'Прыжки', 'Выездка'] }
     };
 
+    // ==================== ПРОГУЛКИ ====================
+    const WALKS = {
+        '🌲 Прогулка в лесу': { skills: ['Выездка', 'Галоп', 'Прыжки'] },
+        '⛰️ Прогулка в горах': { skills: ['Скорость', 'Выносливость', 'Рысь'] }
+    };
+
     const SKILL_NAMES = ['Выносливость', 'Галоп', 'Скорость', 'Рысь', 'Выездка', 'Прыжки'];
 
-    // ==================== РАСШИРЕННЫЙ ПАРСИНГ ====================
+    // ==================== ПАРСИНГ ====================
     function parseAllSkills(text) {
         const result = {};
         SKILL_NAMES.forEach(name => result[name] = 0);
 
-        // Ищем ВСЕ числа, которые идут после названия навыка
         for (const skill of SKILL_NAMES) {
-            // Ищем все вхождения: "Навык" и потом числа (разные форматы)
             const regex = new RegExp(skill + '[\\s\\t]+([\\d.]+)', 'gi');
             let match;
             const found = [];
@@ -358,11 +390,9 @@
                 if (!isNaN(val)) found.push(val);
             }
 
-            // Если нашли несколько чисел — берём максимальное
             if (found.length > 0) {
                 result[skill] = Math.max(...found);
             } else {
-                // Пробуем другой паттерн: навык с переносом строки
                 const multiRegex = new RegExp(skill + '[\\s\\t]*\\n?\\s*([\\d.]+)', 'gi');
                 while ((match = multiRegex.exec(text)) !== null) {
                     const val = parseFloat(match[1].replace(/,/g, '.'));
@@ -372,14 +402,15 @@
                 }
             }
 
-            // Если всё ещё 0 — пробуем найти "Навык" с точкой в конце
-            const dotRegex = new RegExp(skill + '[\\s\\t]*[\\d.]+', 'gi');
-            while ((match = dotRegex.exec(text)) !== null) {
-                const parts = match[0].split(/[\s\t]+/);
-                for (const p of parts) {
-                    const val = parseFloat(p.replace(/,/g, '.'));
-                    if (!isNaN(val) && val > result[skill]) {
-                        result[skill] = val;
+            if (result[skill] === 0) {
+                const dotRegex = new RegExp(skill + '[\\s\\t]*[\\d.]+', 'gi');
+                while ((match = dotRegex.exec(text)) !== null) {
+                    const parts = match[0].split(/[\s\t]+/);
+                    for (const p of parts) {
+                        const val = parseFloat(p.replace(/,/g, '.'));
+                        if (!isNaN(val) && val > result[skill]) {
+                            result[skill] = val;
+                        }
                     }
                 }
             }
@@ -433,14 +464,13 @@
             return `<div class="item"><span>${name}</span><span class="val ${isTop?'top':''}">${medal} ${val.toFixed(2)}</span></div>`;
         }).join('');
 
-        // ТОП-3 для вывода
         const top3Full = top3.map((name, i) => {
             const val = skills[name];
             const prefix = i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉';
             return `${prefix} ${name} (${val.toFixed(2)})`;
         }).join('<br>');
 
-        // Фильтруем дисциплины по ограничению
+        // ==================== ДИСЦИПЛИНЫ ====================
         let filtered = Object.entries(DISCIPLINES);
         if (restriction === 'classic') {
             filtered = filtered.filter(([name, data]) => data.type === 'classic');
@@ -448,7 +478,6 @@
             filtered = filtered.filter(([name, data]) => data.type === 'western');
         }
 
-        // Оцениваем каждую дисциплину
         const matches = [];
         for (const [discName, discData] of filtered) {
             const required = discData.skills;
@@ -480,8 +509,7 @@
                 total: required.length,
                 hitDetails: hitDetails,
                 missDetails: missDetails,
-                score: score,
-                matchPercent: Math.round((hitCount / required.length) * 100)
+                score: score
             });
         }
 
@@ -492,7 +520,37 @@
 
         const filteredMatches = matches.filter(m => m.hitCount >= minMatch);
 
-        // ======== ВЫВОД ========
+        // ==================== ПРОГУЛКИ ====================
+        const walkResults = [];
+        for (const [walkName, walkData] of Object.entries(WALKS)) {
+            const required = walkData.skills;
+            let hitCount = 0;
+            let hitDetails = [];
+            let missDetails = [];
+
+            for (const skill of required) {
+                const pos = top3.indexOf(skill);
+                if (pos !== -1) {
+                    hitCount++;
+                    hitDetails.push(`${skill} (№${pos+1})`);
+                } else {
+                    missDetails.push(skill);
+                }
+            }
+
+            walkResults.push({
+                name: walkName,
+                required: required,
+                hitCount: hitCount,
+                total: required.length,
+                hitDetails: hitDetails,
+                missDetails: missDetails
+            });
+        }
+
+        walkResults.sort((a, b) => b.hitCount - a.hitCount);
+
+        // ==================== ВЫВОД ====================
         const badgeType = restriction === 'classic' ? 'classic' : restriction === 'western' ? 'western' : 'none';
         const badgeLabel = restriction === 'classic' ? 'КЛАССИКА' : restriction === 'western' ? 'ВЕСТЕРН' : 'БЕЗ ОГРАНИЧЕНИЙ';
 
@@ -513,6 +571,7 @@
             </div>
         </div>`;
 
+        // ==================== ДИСЦИПЛИНЫ ====================
         if (filteredMatches.length === 0) {
             if (matches.length === 0) {
                 html += `<div class="main" style="color:#dc2626;">❌ Нет доступных дисциплин с текущим ограничением</div>`;
@@ -537,40 +596,70 @@
                     html += `</div>`;
                 }
             }
-            resultDiv.className = 'result show warning';
-            resultDiv.innerHTML = html;
-            return;
+        } else {
+            html += `<div class="main">✅ Найдено <span class="${filteredMatches[0].hitCount === 3 ? 'match-3' : 'match-2'}">${filteredMatches.length}</span> подходящих дисциплин</div>`;
+            html += `<div class="match-list">`;
+
+            for (const m of filteredMatches) {
+                const isPerfect = m.hitCount === 3;
+                const scoreLabel = isPerfect ? '⭐ ИДЕАЛЬНО' : `${m.hitCount}/${m.total} совпадений`;
+                html += `<div class="match-item">
+                    <span class="name">${m.name} ${isPerfect ? '✅' : ''}</span>
+                    <span class="score ${isPerfect ? 'best' : 'good'}">${scoreLabel}</span>
+                    <span class="skills">
+                        ${m.hitDetails.map(s => `<span class="hit">✅ ${s}</span>`).join(' ')}
+                        ${m.missDetails.map(s => `<span class="miss">❌ ${s}</span>`).join(' ')}
+                    </span>
+                    <span style="font-size:12px; color:#888;">рейтинг: ${m.score}</span>
+                </div>`;
+            }
+            html += `</div>`;
+
+            const perfect = filteredMatches.find(m => m.hitCount === 3);
+            if (perfect) {
+                html += `<div style="margin-top:12px; padding:12px 16px; background:#d1fae5; border-radius:10px; border:2px solid #10b981;">
+                    🎯 <strong>Рекомендация:</strong> выберите <strong>${perfect.name}</strong> — идеальное совпадение всех трёх навыков!
+                </div>`;
+            } else if (filteredMatches.length > 0) {
+                const best = filteredMatches[0];
+                html += `<div style="margin-top:12px; padding:12px 16px; background:#fef3c7; border-radius:10px; border:2px solid #f59e0b;">
+                    💡 <strong>Лучший вариант:</strong> <strong>${best.name}</strong> (${best.hitCount} из 3 навыков совпадают)
+                </div>`;
+            }
         }
 
-        html += `<div class="main">✅ Найдено <span class="${filteredMatches[0].hitCount === 3 ? 'match-3' : 'match-2'}">${filteredMatches.length}</span> подходящих дисциплин</div>`;
-        html += `<div class="match-list">`;
+        // ==================== ПРОГУЛКИ ====================
+        html += `<div class="walks-section">
+            <div class="walk-title">🌳 Рекомендация по прогулкам</div>`;
 
-        for (const m of filteredMatches) {
-            const isPerfect = m.hitCount === 3;
-            const scoreLabel = isPerfect ? '⭐ ИДЕАЛЬНО' : `${m.hitCount}/${m.total} совпадений`;
-            html += `<div class="match-item">
-                <span class="name">${m.name} ${isPerfect ? '✅' : ''}</span>
-                <span class="score ${isPerfect ? 'best' : 'good'}">${scoreLabel}</span>
+        for (const walk of walkResults) {
+            const isBest = walk === walkResults[0] && walk.hitCount > 0;
+            const emoji = walk.hitCount === 3 ? '🌟' : walk.hitCount === 2 ? '👍' : '👀';
+            html += `<div class="walk-item" style="${isBest ? 'border-left-color: #10b981;' : 'border-left-color: #94a3b8;'}">
+                <span class="name">${emoji} ${walk.name}</span>
+                <span class="score">${walk.hitCount}/${walk.total} навыков совпадают</span>
                 <span class="skills">
-                    ${m.hitDetails.map(s => `<span class="hit">✅ ${s}</span>`).join(' ')}
-                    ${m.missDetails.map(s => `<span class="miss">❌ ${s}</span>`).join(' ')}
+                    ${walk.hitDetails.map(s => `<span class="hit">✅ ${s}</span>`).join(' ')}
+                    ${walk.missDetails.map(s => `<span class="miss">❌ ${s}</span>`).join(' ')}
                 </span>
-                <span style="font-size:12px; color:#888;">рейтинг: ${m.score}</span>
             </div>`;
         }
-        html += `</div>`;
 
-        const perfect = filteredMatches.find(m => m.hitCount === 3);
-        if (perfect) {
-            html += `<div style="margin-top:12px; padding:12px 16px; background:#d1fae5; border-radius:10px; border:2px solid #10b981;">
-                🎯 <strong>Рекомендация:</strong> выберите <strong>${perfect.name}</strong> — идеальное совпадение всех трёх навыков!
+        if (walkResults[0].hitCount === 0) {
+            html += `<div style="color:#888; font-size:14px; margin-top:8px;">
+                ⚠️ Ни одна прогулка не совпадает с ТОП-3 навыками. Можно выбрать любую.
             </div>`;
-        } else if (filteredMatches.length > 0) {
-            const best = filteredMatches[0];
-            html += `<div style="margin-top:12px; padding:12px 16px; background:#fef3c7; border-radius:10px; border:2px solid #f59e0b;">
-                💡 <strong>Лучший вариант:</strong> <strong>${best.name}</strong> (${best.hitCount} из 3 навыков совпадают)
+        } else if (walkResults[0].hitCount === 3) {
+            html += `<div style="margin-top:8px; padding:8px 12px; background:#d1fae5; border-radius:8px; font-weight:600; color:#065f46;">
+                🎯 Рекомендуемая прогулка: <strong>${walkResults[0].name}</strong> — идеально подходит!
+            </div>`;
+        } else if (walkResults[0].hitCount >= 2) {
+            html += `<div style="margin-top:8px; padding:8px 12px; background:#fef3c7; border-radius:8px; font-weight:600; color:#92400e;">
+                💡 Рекомендуемая прогулка: <strong>${walkResults[0].name}</strong> (${walkResults[0].hitCount} из 3 навыков совпадают)
             </div>`;
         }
+
+        html += `</div>`;
 
         resultDiv.className = 'result show success';
         resultDiv.innerHTML = html;
@@ -584,7 +673,7 @@
     });
 
     window.onload = function() {
-        analyze();
+        // Не запускаем анализ автоматически
     };
 </script>
 
