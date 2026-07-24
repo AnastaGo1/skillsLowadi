@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐴</text></svg>">
-    <title>Подбор специализации и прогулок</title>
+    <title>Подбор специализации + прогулки</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -42,6 +42,16 @@
             padding-bottom: 15px;
         }
         .subtitle .highlight { background: #fef3c7; padding: 2px 10px; border-radius: 6px; }
+        .subtitle .lang-badge {
+            display: inline-block;
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 1px 12px;
+            border-radius: 40px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
         label {
             font-weight: 600;
             font-size: 15px;
@@ -195,7 +205,7 @@
         .match-item .skills .miss { color: #ef4444; }
         .all-skills-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
             gap: 6px;
             margin-top: 8px;
             font-size: 13px;
@@ -209,6 +219,7 @@
         }
         .all-skills-grid .item .val { font-weight: 600; color: #1a1a2e; }
         .all-skills-grid .item .top { background: #fef3c7; border-radius: 4px; padding: 0 6px; }
+        .all-skills-grid .item .lang { font-size: 11px; color: #94a3b8; margin-left: 4px; }
         .walks-section {
             margin-top: 16px;
             border-top: 2px solid #e8e8e8;
@@ -275,6 +286,21 @@
             border-top: 1px solid #eee;
             padding-top: 18px;
         }
+        .detected-lang {
+            margin-top: 6px;
+            font-size: 13px;
+            color: #666;
+        }
+        .detected-lang .lang-label {
+            display: inline-block;
+            padding: 1px 12px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 12px;
+        }
+        .lang-label.ru { background: #dbeafe; color: #1e40af; }
+        .lang-label.en { background: #fef3c7; color: #92400e; }
+        .lang-label.both { background: #d1fae5; color: #065f46; }
         @media (max-width: 600px) {
             .container { padding: 20px; }
             h1 { font-size: 22px; }
@@ -287,13 +313,14 @@
 <body>
 
 <div class="container">
-    <h1><span>🐴</span> Подбор специализации</h1>
+    <h1><span>🐴</span> Подбор специализации + прогулки</h1>
     <div class="subtitle">
         Вставьте данные <span class="highlight">Генетический потенциал</span> и/или <span class="highlight">Навыки</span> — 
         система подберёт <strong>лучшую дисциплину</strong> и <strong>прогулку</strong> для вашей лошади
+        <span class="lang-badge">🇷🇺 Русский / 🇬🇧 English</span>
     </div>
 
-    <label for="rawData">📋 Вставьте сюда скопированный текст:</label>
+    <label for="rawData">📋 Вставьте сюда скопированный текст (русский или английский):</label>
     <textarea id="rawData" placeholder="Пример данных (скопируйте из игры и вставьте сюда):
 
 Генетический потенциал		Итог: 35472.26
@@ -320,7 +347,35 @@
 3938.53
 Прыжки	
 201.7953
-8273.61"></textarea>
+8273.61
+
+ИЛИ на английском:
+
+Genetic potential		Total: 6745.00
+Stamina	1067.73	 	Gallop	1200.60
+Speed	1556.75	 	Trot	770.95
+Dressage	1778.66	 	Jumping	370.30
+
+Skills
+Total: 1349.00
+Stamina	
+4.9662
+213.55
+Speed	
+7.2407
+311.35
+Dressage	
+8.2728
+355.73
+Gallop	
+5.5842
+240.12
+Trot	
+3.5858
+154.19
+Jumping	
+1.7223
+74.06"></textarea>
 
     <div class="row">
         <div>
@@ -345,16 +400,18 @@
 
     <div class="example">
         🌲 <strong>Прогулки:</strong> система также подберёт прогулку, которая качает ваши сильные навыки.<br>
-        • <strong>Прогулка в лесу</strong> — Выездка, Галоп, Прыжки<br>
-        • <strong>Прогулка в горах</strong> — Скорость, Выносливость, Рысь
+        • <strong>Прогулка в лесу / Forest Walk</strong> — Выездка (Dressage), Галоп (Gallop), Прыжки (Jumping)<br>
+        • <strong>Прогулка в горах / Mountain Walk</strong> — Скорость (Speed), Выносливость (Stamina), Рысь (Trot)<br>
+        <span style="color:#888;">✅ Поддерживаются <strong>русские</strong> и <strong>английские</strong> названия навыков</span>
     </div>
 
     <div id="result" class="result"></div>
-    <div class="footer">Автоматический подбор по ТОП-3 навыкам</div>
+    <div class="footer">Автоматический подбор по ТОП-3 навыкам + прогулки • v4 — поддерживает русский и английский</div>
 </div>
 
 <script>
     // ==================== БАЗА ДАННЫХ ====================
+    // Навыки в дисциплинах ВСЕГДА на русском (для отображения)
     const DISCIPLINES = {
         'Скачки галопом': { type: 'classic', main: 'Галоп', skills: ['Галоп', 'Скорость', 'Выносливость'] },
         'Бег рысью':      { type: 'classic', main: 'Рысь', skills: ['Рысь', 'Скорость', 'Выездка'] },
@@ -368,21 +425,52 @@
         'Трейл':          { type: 'western', main: 'Рысь', skills: ['Рысь', 'Прыжки', 'Выездка'] }
     };
 
-    // ==================== ПРОГУЛКИ ====================
+    // Прогулки — на русском для отображения
     const WALKS = {
         '🌲 Прогулка в лесу': { skills: ['Выездка', 'Галоп', 'Прыжки'] },
         '⛰️ Прогулка в горах': { skills: ['Скорость', 'Выносливость', 'Рысь'] }
     };
 
-    const SKILL_NAMES = ['Выносливость', 'Галоп', 'Скорость', 'Рысь', 'Выездка', 'Прыжки'];
+    // ==================== СООТВЕТСТВИЕ НАЗВАНИЙ ====================
+    const SKILL_MAP = {
+        // Русский → внутренний (и для отображения)
+        'Выносливость': 'Выносливость',
+        'Галоп': 'Галоп',
+        'Скорость': 'Скорость',
+        'Рысь': 'Рысь',
+        'Выездка': 'Выездка',
+        'Прыжки': 'Прыжки',
+        // Английский → русский
+        'Stamina': 'Выносливость',
+        'Gallop': 'Галоп',
+        'Speed': 'Скорость',
+        'Trot': 'Рысь',
+        'Dressage': 'Выездка',
+        'Jumping': 'Прыжки'
+    };
+
+    // Список всех названий (для парсинга) — русские + английские
+    const SKILL_NAMES_RU = ['Выносливость', 'Галоп', 'Скорость', 'Рысь', 'Выездка', 'Прыжки'];
+    const SKILL_NAMES_EN = ['Stamina', 'Gallop', 'Speed', 'Trot', 'Dressage', 'Jumping'];
+    const ALL_SKILL_NAMES = [...SKILL_NAMES_RU, ...SKILL_NAMES_EN];
 
     // ==================== ПАРСИНГ ====================
     function parseAllSkills(text) {
         const result = {};
-        SKILL_NAMES.forEach(name => result[name] = 0);
+        SKILL_NAMES_RU.forEach(name => result[name] = 0);
 
-        for (const skill of SKILL_NAMES) {
-            const regex = new RegExp(skill + '[\\s\\t]+([\\d.]+)', 'gi');
+        // Ищем по русским и английским названиям
+        for (const [ruName, enName] of Object.entries(SKILL_MAP)) {
+            // Если ключ — русский, то это маппинг ru→ru
+            // Если ключ — английский, то маппинг en→ru
+        }
+
+        // Ищем все названия (русские и английские)
+        for (const name of ALL_SKILL_NAMES) {
+            const ruName = SKILL_MAP[name] || name; // Если name русский, он же и будет ключом
+            
+            // Паттерн: название + пробелы/табуляция + число
+            const regex = new RegExp(name + '[\\s\\t]+([\\d.]+)', 'gi');
             let match;
             const found = [];
             while ((match = regex.exec(text)) !== null) {
@@ -391,26 +479,29 @@
             }
 
             if (found.length > 0) {
-                result[skill] = Math.max(...found);
-            } else {
-                const multiRegex = new RegExp(skill + '[\\s\\t]*\\n?\\s*([\\d.]+)', 'gi');
-                while ((match = multiRegex.exec(text)) !== null) {
-                    const val = parseFloat(match[1].replace(/,/g, '.'));
-                    if (!isNaN(val) && val > result[skill]) {
-                        result[skill] = val;
-                    }
+                const maxVal = Math.max(...found);
+                if (maxVal > result[ruName]) {
+                    result[ruName] = maxVal;
                 }
             }
 
-            if (result[skill] === 0) {
-                const dotRegex = new RegExp(skill + '[\\s\\t]*[\\d.]+', 'gi');
-                while ((match = dotRegex.exec(text)) !== null) {
-                    const parts = match[0].split(/[\s\t]+/);
-                    for (const p of parts) {
-                        const val = parseFloat(p.replace(/,/g, '.'));
-                        if (!isNaN(val) && val > result[skill]) {
-                            result[skill] = val;
-                        }
+            // Паттерн: название + перенос строки + число
+            const multiRegex = new RegExp(name + '[\\s\\t]*\\n?\\s*([\\d.]+)', 'gi');
+            while ((match = multiRegex.exec(text)) !== null) {
+                const val = parseFloat(match[1].replace(/,/g, '.'));
+                if (!isNaN(val) && val > result[ruName]) {
+                    result[ruName] = val;
+                }
+            }
+
+            // Паттерн: название + любое число в строке
+            const dotRegex = new RegExp(name + '[\\s\\t]*[\\d.]+', 'gi');
+            while ((match = dotRegex.exec(text)) !== null) {
+                const parts = match[0].split(/[\s\t]+/);
+                for (const p of parts) {
+                    const val = parseFloat(p.replace(/,/g, '.'));
+                    if (!isNaN(val) && val > result[ruName]) {
+                        result[ruName] = val;
                     }
                 }
             }
@@ -420,11 +511,21 @@
     }
 
     function getTop3(skills) {
-        const sorted = SKILL_NAMES.map(name => ({ name, value: skills[name] || 0 }))
-                                  .filter(s => s.value > 0)
-                                  .sort((a, b) => b.value - a.value);
+        const sorted = SKILL_NAMES_RU.map(name => ({ name, value: skills[name] || 0 }))
+                                     .filter(s => s.value > 0)
+                                     .sort((a, b) => b.value - a.value);
         if (sorted.length < 3) return sorted.map(s => s.name);
         return sorted.slice(0, 3).map(s => s.name);
+    }
+
+    // Определяем, какой язык был использован
+    function detectLanguage(text) {
+        const hasRussian = SKILL_NAMES_RU.some(name => text.includes(name));
+        const hasEnglish = SKILL_NAMES_EN.some(name => text.includes(name));
+        if (hasRussian && hasEnglish) return 'both';
+        if (hasRussian) return 'ru';
+        if (hasEnglish) return 'en';
+        return 'unknown';
     }
 
     // ==================== АНАЛИЗ ====================
@@ -441,10 +542,10 @@
         }
 
         const skills = parseAllSkills(raw);
-        const hasAny = SKILL_NAMES.some(name => skills[name] > 0);
+        const hasAny = SKILL_NAMES_RU.some(name => skills[name] > 0);
         if (!hasAny) {
             resultDiv.className = 'result show error';
-            resultDiv.innerHTML = '❌ Не удалось найти цифры навыков. Проверьте, что в тексте есть названия (Выносливость, Галоп, ...) и цифры рядом.';
+            resultDiv.innerHTML = '❌ Не удалось найти цифры навыков. Проверьте, что в тексте есть названия (Выносливость/Stamina, Галоп/Gallop, ...) и цифры рядом.';
             return;
         }
 
@@ -455,19 +556,34 @@
             return;
         }
 
+        // Определяем язык
+        const lang = detectLanguage(raw);
+        const langLabels = {
+            'ru': '<span class="lang-label ru">🇷🇺 Русский</span>',
+            'en': '<span class="lang-label en">🇬🇧 English</span>',
+            'both': '<span class="lang-label both">🌍 Русский + English</span>',
+            'unknown': '<span class="lang-label" style="background:#fef3c7;color:#92400e;">❓ Неизвестно</span>'
+        };
+
         // Все навыки для отображения
-        const allSkillsHtml = SKILL_NAMES.map(name => {
+        const allSkillsHtml = SKILL_NAMES_RU.map(name => {
             const val = skills[name];
             const isTop = top3.includes(name);
             const pos = top3.indexOf(name);
             const medal = pos === 0 ? '🥇' : pos === 1 ? '🥈' : pos === 2 ? '🥉' : '';
-            return `<div class="item"><span>${name}</span><span class="val ${isTop?'top':''}">${medal} ${val.toFixed(2)}</span></div>`;
+            // Показываем также английский вариант в скобках
+            const enName = Object.keys(SKILL_MAP).find(k => SKILL_MAP[k] === name && k !== name) || '';
+            return `<div class="item">
+                <span>${name}${enName ? ` <span class="lang">(${enName})</span>` : ''}</span>
+                <span class="val ${isTop?'top':''}">${medal} ${val.toFixed(2)}</span>
+            </div>`;
         }).join('');
 
         const top3Full = top3.map((name, i) => {
             const val = skills[name];
             const prefix = i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉';
-            return `${prefix} ${name} (${val.toFixed(2)})`;
+            const enName = Object.keys(SKILL_MAP).find(k => SKILL_MAP[k] === name && k !== name) || '';
+            return `${prefix} ${name}${enName ? ` (${enName})` : ''} (${val.toFixed(2)})`;
         }).join('<br>');
 
         // ==================== ДИСЦИПЛИНЫ ====================
@@ -554,9 +670,10 @@
         const badgeType = restriction === 'classic' ? 'classic' : restriction === 'western' ? 'western' : 'none';
         const badgeLabel = restriction === 'classic' ? 'КЛАССИКА' : restriction === 'western' ? 'ВЕСТЕРН' : 'БЕЗ ОГРАНИЧЕНИЙ';
 
-        let html = `<div style="margin-bottom:12px;">
+        let html = `<div style="margin-bottom:12px; display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
             <span class="badge ${badgeType}">${badgeLabel}</span>
-            <span style="font-size:13px; color:#888; margin-left:10px;">Минимум ${minMatch} из 3 совпадений</span>
+            <span style="font-size:13px; color:#888;">Минимум ${minMatch} из 3 совпадений</span>
+            <span class="detected-lang">Язык: ${langLabels[lang]}</span>
         </div>`;
 
         html += `<div style="margin-bottom:12px; background:#f8fafc; padding:12px 16px; border-radius:10px;">
@@ -633,9 +750,8 @@
             <div class="walk-title">🌳 Рекомендация по прогулкам</div>`;
 
         for (const walk of walkResults) {
-            const isBest = walk === walkResults[0] && walk.hitCount > 0;
             const emoji = walk.hitCount === 3 ? '🌟' : walk.hitCount === 2 ? '👍' : '👀';
-            html += `<div class="walk-item" style="${isBest ? 'border-left-color: #10b981;' : 'border-left-color: #94a3b8;'}">
+            html += `<div class="walk-item" style="${walk === walkResults[0] && walk.hitCount > 0 ? 'border-left-color: #10b981;' : 'border-left-color: #94a3b8;'}">
                 <span class="name">${emoji} ${walk.name}</span>
                 <span class="score">${walk.hitCount}/${walk.total} навыков совпадают</span>
                 <span class="skills">
